@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.WristRelay" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">@font/wanted_sans_regular</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">#262721</item>
+        <item name="android:statusBarColor">#F7F5F0</item>
+        <item name="android:windowBackground">#F7F5F0</item>
+    </style>
+</resources>
