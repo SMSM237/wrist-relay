@@ -1,5 +1,7 @@
 # Wrist Relay
 
+Android notification relay for selected alerts on Galaxy Watch — local-first, phone-only.
+
 원하는 휴대폰 알림만 손목으로 전달하는 Android 앱입니다. 휴대폰에만 설치하며, 워치 앱·계정·서버는 없습니다. 현재 검증 대상은 Galaxy S25 Edge와 Galaxy Watch Ultra (2025)이지만, 특정 모델 코드에 의존하지 않고 Android 알림 권한과 리스너 연결 상태로 동작을 판단합니다.
 
 ![Wrist Relay 홈 화면](screenshots/home.png)
