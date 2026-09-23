@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -57,7 +56,6 @@ import androidx.compose.ui.unit.dp
 import com.sangmin.wristrelay.data.CapturedNotificationRecord
 import com.sangmin.wristrelay.domain.RuleDraft
 import com.sangmin.wristrelay.domain.SmartRule
-import com.sangmin.wristrelay.domain.VibrationPreset
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -210,7 +208,7 @@ private fun HomeScreen(
                 actionLabel = if (state.readiness.listenerAccessGranted) "재연결" else "설정",
                 successLabel = "연결")
             if (state.readiness.blockedPresetChannels.isNotEmpty()) {
-                StatusLine("진동 채널", false, "진동이 꺼졌거나 조용한 패턴 ${state.readiness.blockedPresetChannels.size}개", onOpenNotificationSettings)
+                StatusLine("알림 채널", false, "알림이 차단되었거나 진동이 꺼져 있습니다", onOpenNotificationSettings)
             }
             StatusLine("로컬 저장소", state.storageHealth?.let { it.databaseReadable && it.cryptoReady } == true,
                 when {
@@ -222,7 +220,7 @@ private fun HomeScreen(
         }
         state.lastWatchTestConfirmedAt?.let { epoch ->
             item {
-                Text("워치 진동 확인 · 사용자가 직접 확인", color = Mint, fontWeight = FontWeight.SemiBold)
+                Text("워치 알림 수신 · 사용자가 직접 확인", color = Mint, fontWeight = FontWeight.SemiBold)
                 Text(formatInstant(epoch), color = Muted, style = MaterialTheme.typography.bodyMedium)
             }
         }
@@ -341,7 +339,7 @@ private fun RuleEditorScreen(
 ) {
     val draft = state.draft ?: return
     LazyColumn(
-        Modifier.fillMaxSize().statusBarsPadding(),
+        Modifier.fillMaxSize().statusBarsPadding().testTag("rule_editor_list"),
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -389,25 +387,25 @@ private fun RuleEditorScreen(
             )
         }
         item {
-            Text("워치 진동", style = MaterialTheme.typography.titleLarge)
-            Text("워치는 자체 알림 진동 설정으로 울립니다. 휴대폰 무음은 Galaxy Wearable에서 설정하세요.", color = Muted, modifier = Modifier.padding(top = 4.dp, bottom = 10.dp))
-            VibrationPresets(draft.preset) { preset -> onUpdateDraft { it.copy(preset = preset) } }
+            Text("워치 전달 테스트", style = MaterialTheme.typography.titleLarge)
+            Text("10초 후 알림을 보냅니다. ‘스마트 기기 선택’이면 그 사이 휴대폰을 잠그세요. 화면을 켜둔 채 확인하려면 Galaxy Wearable에서 ‘항상 두 기기에 표시’를 선택하세요. 진동 방식은 워치 설정을 따릅니다.", color = Muted, modifier = Modifier.padding(top = 4.dp, bottom = 10.dp))
         }
         item {
-            OutlinedButton(onClick = onSendWatchTest, modifier = Modifier.fillMaxWidth().height(54.dp)) {
-                Text("이 패턴으로 테스트 알림 보내기")
+            OutlinedButton(onClick = onSendWatchTest, enabled = state.watchTestCountdownSeconds == 0,
+                modifier = Modifier.fillMaxWidth().height(54.dp)) {
+                Text(if (state.watchTestCountdownSeconds > 0) "${state.watchTestCountdownSeconds}초 후 전송 · 화면을 잠그세요" else "10초 후 테스트 알림 보내기")
             }
         }
         if (state.watchTestSent && !state.watchTestConfirmed) {
             item {
                 Column(Modifier.fillMaxWidth().border(1.dp, Mint, RoundedCornerShape(18.dp)).padding(16.dp)) {
-                    Text("워치에서 진동했나요?", style = MaterialTheme.typography.titleMedium)
-                    Button(onClick = onConfirmWatchTest, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) { Text("네, 확인했습니다") }
+                    Text("워치에서 알림을 받으셨나요?", style = MaterialTheme.typography.titleMedium)
+                    Button(onClick = onConfirmWatchTest, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) { Text("네, 워치에서 받았습니다") }
                 }
             }
         }
         if (state.watchTestConfirmed) {
-            item { Text("워치 진동 확인 · 사용자가 직접 확인", color = Mint, fontWeight = FontWeight.SemiBold) }
+            item { Text("워치 알림 수신 · 사용자가 직접 확인", color = Mint, fontWeight = FontWeight.SemiBold) }
         }
         item {
             Button(
@@ -449,28 +447,6 @@ private fun ConditionField(
 }
 
 @Composable
-private fun VibrationPresets(selected: VibrationPreset, onSelect: (VibrationPreset) -> Unit) {
-    val labels = listOf(
-        VibrationPreset.SHORT_ONCE to "짧게 1회",
-        VibrationPreset.SHORT_TWICE to "짧게 2회",
-        VibrationPreset.LONG_ONCE to "길게 1회",
-        VibrationPreset.EMPHASIZED_THREE to "강조 3회",
-    )
-    labels.chunked(2).forEach { row ->
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            row.forEach { (preset, label) ->
-                OutlinedButton(
-                    onClick = { onSelect(preset) },
-                    modifier = Modifier.weight(1f).height(50.dp),
-                    colors = if (selected == preset) ButtonDefaults.outlinedButtonColors(containerColor = Mint, contentColor = DeepNavy) else ButtonDefaults.outlinedButtonColors(),
-                ) { Text(label) }
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-    }
-}
-
-@Composable
 private fun RulesScreen(
     state: AppUiState,
     onSetEnabled: (String, Boolean) -> Unit,
@@ -480,7 +456,7 @@ private fun RulesScreen(
 ) {
     Column(Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp)) {
         Text("전달 규칙", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(top = 22.dp))
-        Text("조건이 맞을 때만 무음 알림을 게시해 워치로 전달합니다.", color = Muted, modifier = Modifier.padding(top = 6.dp, bottom = 16.dp))
+        Text("조건이 맞을 때만 알림을 게시해 워치로 전달합니다.", color = Muted, modifier = Modifier.padding(top = 6.dp, bottom = 16.dp))
         if (state.rules.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -503,7 +479,7 @@ private fun RuleRow(rule: SmartRule, onSetEnabled: (String, Boolean) -> Unit, on
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(rule.name, style = MaterialTheme.typography.titleMedium)
-                Text(presetLabel(rule.preset), color = Mint, style = MaterialTheme.typography.labelLarge)
+                Text("워치 알림 전달", color = Mint, style = MaterialTheme.typography.labelLarge)
             }
             Switch(
                 checked = rule.enabled,
@@ -559,7 +535,7 @@ private fun DiagnosticsScreen(
                 ListenerEvent.CONNECTED -> "연결 콜백"
                 ListenerEvent.DISCONNECTED -> "연결 해제 또는 서비스 종료"
             }}", color = Muted, style = MaterialTheme.typography.bodyMedium)
-            DiagnosticLine("진동 채널", "진동 불가 ${state.readiness.blockedPresetChannels.size}개", state.readiness.blockedPresetChannels.isEmpty())
+            DiagnosticLine("알림 채널", if (state.readiness.blockedPresetChannels.isEmpty()) "사용 가능" else "차단 또는 진동 꺼짐", state.readiness.blockedPresetChannels.isEmpty())
             DiagnosticLine("저장소 읽기", state.storageHealth?.databaseReadable?.let { if (it) "검사 통과" else "검사 실패" } ?: "확인 중", state.storageHealth?.databaseReadable)
             DiagnosticLine("암호화 왕복", state.storageHealth?.cryptoReady?.let { if (it) "검사 통과" else "검사 실패" } ?: "확인 중", state.storageHealth?.cryptoReady)
             state.storageHealth?.databaseFailureType?.let { Text("저장소 읽기 오류: $it", color = Danger) }
@@ -669,13 +645,6 @@ private fun formatRemaining(totalSeconds: Long): String {
 private fun formatInstant(epochMillis: Long): String = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm")
     .withZone(ZoneId.systemDefault())
     .format(Instant.ofEpochMilli(epochMillis))
-
-private fun presetLabel(preset: VibrationPreset): String = when (preset) {
-    VibrationPreset.SHORT_ONCE -> "짧게 1회"
-    VibrationPreset.SHORT_TWICE -> "짧게 2회"
-    VibrationPreset.LONG_ONCE -> "길게 1회"
-    VibrationPreset.EMPHASIZED_THREE -> "강조 3회"
-}
 
 private fun smartConditionSummary(rule: SmartRule): String = buildList {
     if (rule.useChannel) add("채널 일치")

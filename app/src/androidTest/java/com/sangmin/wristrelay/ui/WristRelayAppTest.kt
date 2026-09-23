@@ -4,7 +4,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import com.sangmin.wristrelay.domain.SmartRule
 import com.sangmin.wristrelay.domain.VibrationPreset
 import org.junit.Rule
@@ -56,6 +58,41 @@ class WristRelayAppTest {
 
         composeRule.onNodeWithText("수정").performClick()
         composeRule.runOnIdle { assertEquals(rule.id, editedId) }
+    }
+
+    @Test
+    fun editorExplainsDelayedDeliveryWithoutOfferingUnreliablePatterns() {
+        val rule = SmartRule(
+            id = "saved-rule",
+            name = "차량 문 열림",
+            packageName = "com.example.wallet",
+            channelId = "digital-key",
+            useChannel = true,
+            titlePhrase = "문 열림",
+            useTitle = true,
+            bodyPhrase = null,
+            useBody = false,
+            preset = VibrationPreset.SHORT_TWICE,
+            enabled = true,
+        )
+        render(AppUiState(screen = AppScreen.EDITOR, editingRuleId = rule.id, draft =
+            com.sangmin.wristrelay.domain.RuleDraft(
+                name = rule.name,
+                packageName = rule.packageName,
+                channelId = rule.channelId,
+                useChannel = rule.useChannel,
+                titlePhrase = rule.titlePhrase,
+                useTitle = rule.useTitle,
+                bodyPhrase = rule.bodyPhrase,
+                useBody = rule.useBody,
+                preset = rule.preset,
+            )))
+
+        composeRule.onNodeWithTag("rule_editor_list")
+            .performScrollToNode(hasText("10초 후 테스트 알림 보내기"))
+        composeRule.onNodeWithText("10초 후 테스트 알림 보내기").assertIsDisplayed()
+        composeRule.onNodeWithText("짧게 1회").assertDoesNotExist()
+        composeRule.onNodeWithText("강조 3회").assertDoesNotExist()
     }
 
     private fun render(state: AppUiState, onEditRule: (String) -> Unit = {}) {

@@ -4,10 +4,7 @@
     <string name="notification_listener_label">Wrist Relay 알림 감지</string>
     <string name="notification_listener_description">선택한 알림을 기기 안에서 판별해 워치 알림으로 전달합니다.</string>
     <string name="relay_channel_description">선택한 알림을 연결된 워치로 전달하는 Wrist Relay 알림</string>
-    <string name="relay_channel_short_once">워치 진동 · 짧게 1회</string>
-    <string name="relay_channel_short_twice">워치 진동 · 짧게 2회</string>
-    <string name="relay_channel_long_once">워치 진동 · 길게 1회</string>
-    <string name="relay_channel_emphasis_three">워치 진동 · 강조 3회</string>
+    <string name="relay_channel_name">워치로 전달할 알림</string>
     <string name="relay_public_title">Wrist Relay 알림</string>
     <string name="relay_public_text">잠금을 해제하여 내용을 확인하세요.</string>
 </resources>

@@ -32,11 +32,11 @@ class NotificationAccess(
             ).orEmpty()
             enabled.split(':').any { ComponentName.unflattenFromString(it) == component }
         }
-        val blocked = VibrationPreset.entries.filterTo(mutableSetOf()) { preset ->
-            val channel = manager.getNotificationChannel(RelayNotificationPublisher.channelId(preset))
-            channel == null || channel.importance < NotificationManager.IMPORTANCE_DEFAULT ||
-                !channel.shouldVibrate()
-        }
+        val channel = manager.getNotificationChannel(
+            RelayNotificationPublisher.channelId(VibrationPreset.SHORT_TWICE),
+        )
+        val blocked = if (channel == null || channel.importance < NotificationManager.IMPORTANCE_DEFAULT ||
+            !channel.shouldVibrate()) setOf(VibrationPreset.SHORT_TWICE) else emptySet()
         return NotificationAccessState(
             listenerAccessGranted = listenerAccess,
             postNotificationsGranted = android.os.Build.VERSION.SDK_INT < 33 ||

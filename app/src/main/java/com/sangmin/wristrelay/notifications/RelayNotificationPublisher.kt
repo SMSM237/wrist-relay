@@ -24,33 +24,32 @@ class RelayNotificationPublisher(
             .setUsage(AudioAttributes.USAGE_NOTIFICATION)
             .build()
         val notificationSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        CHANNELS.forEach { definition ->
-            if (notificationManager.getNotificationChannel(definition.id) != null) return@forEach
-            val channel = NotificationChannel(
-                definition.id,
-                context.getString(definition.nameResource),
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = context.getString(R.string.relay_channel_description)
-                enableVibration(true)
-                vibrationPattern = definition.vibrationPattern
-                setSound(notificationSound, notificationAudio)
-                lockscreenVisibility = NotificationCompat.VISIBILITY_PRIVATE
-            }
-            notificationManager.createNotificationChannel(channel)
+        if (notificationManager.getNotificationChannel(CHANNEL_ID) != null) return
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            context.getString(R.string.relay_channel_name),
+            NotificationManager.IMPORTANCE_HIGH,
+        ).apply {
+            description = context.getString(R.string.relay_channel_description)
+            enableVibration(true)
+            setSound(notificationSound, notificationAudio)
+            lockscreenVisibility = NotificationCompat.VISIBILITY_PRIVATE
         }
+        notificationManager.createNotificationChannel(channel)
     }
 
     fun publish(rule: SmartRule, event: NormalizedNotification) {
         ensureChannels()
-        val publicVersion = NotificationCompat.Builder(context, channelId(rule.preset))
+        val publicVersion = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(context.getColor(R.color.relay_notification_accent))
             .setContentTitle(context.getString(R.string.relay_public_title))
             .setContentText(context.getString(R.string.relay_public_text))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
-        val notification = NotificationCompat.Builder(context, channelId(rule.preset))
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(context.getColor(R.color.relay_notification_accent))
             .setContentTitle(event.title.ifBlank { rule.name })
             .setContentText(event.body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(event.body))
@@ -66,6 +65,7 @@ class RelayNotificationPublisher(
     }
 
     companion object {
+        private const val CHANNEL_ID = "relay_watch_v3"
         private val notificationSequence = AtomicInteger(10_000)
         private val DEFAULT_ID_PROVIDER: () -> Int = {
             notificationSequence.updateAndGet { current ->
@@ -73,42 +73,8 @@ class RelayNotificationPublisher(
             }
         }
 
-        private val CHANNELS = listOf(
-            ChannelDefinition(
-                VibrationPreset.SHORT_ONCE,
-                "relay_short_once_v2",
-                R.string.relay_channel_short_once,
-                longArrayOf(0, 160),
-            ),
-            ChannelDefinition(
-                VibrationPreset.SHORT_TWICE,
-                "relay_short_twice_v2",
-                R.string.relay_channel_short_twice,
-                longArrayOf(0, 140, 120, 140),
-            ),
-            ChannelDefinition(
-                VibrationPreset.LONG_ONCE,
-                "relay_long_once_v2",
-                R.string.relay_channel_long_once,
-                longArrayOf(0, 480),
-            ),
-            ChannelDefinition(
-                VibrationPreset.EMPHASIZED_THREE,
-                "relay_emphasis_three_v2",
-                R.string.relay_channel_emphasis_three,
-                longArrayOf(0, 220, 120, 220, 120, 380),
-            ),
-        )
-
-        fun channelId(preset: VibrationPreset): String = CHANNELS
-            .first { definition -> definition.preset == preset }
-            .id
+        // Legacy rules retain their stored preset for database compatibility.
+        @Suppress("UNUSED_PARAMETER")
+        fun channelId(preset: VibrationPreset): String = CHANNEL_ID
     }
 }
-
-private data class ChannelDefinition(
-    val preset: VibrationPreset,
-    val id: String,
-    val nameResource: Int,
-    val vibrationPattern: LongArray,
-)

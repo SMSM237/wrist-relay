@@ -15,6 +15,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -54,6 +56,8 @@ class AppViewModelTest {
         assertFalse(viewModel.state.value.watchTestConfirmed)
 
         viewModel.sendWatchTest()
+        advanceTimeBy(10_000)
+        runCurrent()
         assertEquals(1, backend.watchTests)
         viewModel.confirmWatchTest()
         viewModel.saveRule()
@@ -61,6 +65,51 @@ class AppViewModelTest {
         assertEquals(1, backend.savedRules.size)
         assertEquals(AppScreen.RULES, viewModel.state.value.screen)
         assertTrue(backend.watchConfirmationRecorded)
+    }
+
+    @Test
+    fun watchTestWaitsTenSecondsSoPhoneCanBeLockedBeforePosting() = runTest(dispatcher) {
+        val backend = FakeBackend()
+        val viewModel = AppViewModel(backend, FIXED_CLOCK)
+        viewModel.startCapture()
+        viewModel.chooseCaptured(RECORD.id)
+
+        try {
+            viewModel.sendWatchTest()
+            assertEquals(0, backend.watchTests)
+            assertFalse(viewModel.state.value.watchTestSent)
+
+            advanceTimeBy(9_000)
+            runCurrent()
+            assertEquals(0, backend.watchTests)
+
+            advanceTimeBy(1_000)
+            runCurrent()
+            assertEquals(1, backend.watchTests)
+            assertTrue(viewModel.state.value.watchTestSent)
+        } finally {
+            viewModel.cancelCapture()
+        }
+    }
+
+    @Test
+    fun changingRuleWhileTestIsPendingPreventsStaleNotification() = runTest(dispatcher) {
+        val backend = FakeBackend()
+        val viewModel = AppViewModel(backend, FIXED_CLOCK)
+        viewModel.startCapture()
+        viewModel.chooseCaptured(RECORD.id)
+        try {
+            viewModel.sendWatchTest()
+            viewModel.updateDraft { it.copy(name = "새 조건") }
+            advanceTimeBy(10_000)
+            runCurrent()
+
+            assertEquals(0, backend.watchTests)
+            assertFalse(viewModel.state.value.watchTestSent)
+            assertEquals(0, viewModel.state.value.watchTestCountdownSeconds)
+        } finally {
+            viewModel.cancelCapture()
+        }
     }
 
     @Test
@@ -80,6 +129,8 @@ class AppViewModelTest {
             )
         }
         viewModel.sendWatchTest()
+        advanceTimeBy(10_000)
+        runCurrent()
         viewModel.confirmWatchTest()
 
         viewModel.saveRule()
@@ -112,6 +163,8 @@ class AppViewModelTest {
         assertEquals(SAVED_RULE.name, viewModel.state.value.draft?.name)
         viewModel.updateDraft { it.copy(name = "수정한 규칙", channelId = "new-channel", preset = VibrationPreset.LONG_ONCE) }
         viewModel.sendWatchTest()
+        advanceTimeBy(10_000)
+        runCurrent()
         viewModel.confirmWatchTest()
         viewModel.saveRule()
 

@@ -32,24 +32,16 @@ class RelayNotificationPublisherTest {
     }
 
     @Test
-    fun createsFourStableHighImportanceDistinctChannels() {
+    fun legacyPresetsUseOneBridgeableChannelWithDefaultVibration() {
         publisher.ensureChannels()
 
-        val channels = VibrationPreset.entries.map { preset ->
-            manager.getNotificationChannel(RelayNotificationPublisher.channelId(preset))
-        }
-        assertTrue(channels.all { it != null })
-        assertTrue(channels.all { it!!.importance == NotificationManager.IMPORTANCE_HIGH })
-        assertTrue(channels.all { it!!.shouldVibrate() })
-        assertTrue(channels.all { it!!.sound != null })
-        assertEquals(4, channels.map { it!!.vibrationPattern!!.contentHashCode() }.distinct().size)
-        assertEquals("relay_short_once_v2", RelayNotificationPublisher.channelId(VibrationPreset.SHORT_ONCE))
-        assertEquals("relay_short_twice_v2", RelayNotificationPublisher.channelId(VibrationPreset.SHORT_TWICE))
-        assertEquals("relay_long_once_v2", RelayNotificationPublisher.channelId(VibrationPreset.LONG_ONCE))
-        assertEquals(
-            "relay_emphasis_three_v2",
-            RelayNotificationPublisher.channelId(VibrationPreset.EMPHASIZED_THREE),
-        )
+        val ids = VibrationPreset.entries.map(RelayNotificationPublisher::channelId).toSet()
+        assertEquals(setOf("relay_watch_v3"), ids)
+        val channel = manager.getNotificationChannel(ids.single())
+        assertNotNull(channel)
+        assertEquals(NotificationManager.IMPORTANCE_HIGH, channel.importance)
+        assertTrue(channel.shouldVibrate())
+        assertTrue(channel.sound != null)
     }
 
     @Test
@@ -69,6 +61,7 @@ class RelayNotificationPublisherTest {
         publisher.publish(openDoorRule(), openDoorEvent())
 
         val notification = manager.activeNotifications.single().notification
+        assertEquals(0xFF97543C.toInt(), notification.color)
         assertEquals(0, notification.flags and Notification.FLAG_LOCAL_ONLY)
         assertEquals(Notification.VISIBILITY_PRIVATE, notification.visibility)
         assertNotNull(notification.publicVersion)

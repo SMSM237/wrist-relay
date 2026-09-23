@@ -20,7 +20,7 @@ The product learns only user-selected, newly occurring notifications and keeps m
 
 ## Operating Context
 
-The primary validation pair is a Galaxy S25 Edge and Galaxy Watch Ultra (2025). The user grants Android notification access, configures Galaxy Wearable to show Wrist Relay alerts and mute the paired phone, triggers a real source notification, reviews the generated conditions, selects a preset, and manually confirms the watch test.
+The primary validation pair is a Galaxy S25 Edge and Galaxy Watch Ultra (2025). The user grants Android notification access, configures Galaxy Wearable to show Wrist Relay alerts and mute the paired phone, triggers a real source notification, reviews the generated conditions, and manually confirms the delayed watch-delivery test. Watch vibration follows Galaxy Wearable settings; the phone-only app does not assign per-notification watch vibration patterns.
 
 ## Capabilities and Constraints
 

@@ -52,6 +52,7 @@ data class AppUiState(
     val listenerRebindRequestedAt: Long? = null,
     val listenerFailureType: String? = null,
     val watchTestSent: Boolean = false,
+    val watchTestCountdownSeconds: Int = 0,
     val watchTestConfirmed: Boolean = false,
     val lastWatchTestConfirmedAt: Long? = null,
     val busy: Boolean = false,
@@ -68,6 +69,7 @@ class AppViewModel(
     private val mutableState = MutableStateFlow(AppUiState())
     val state: StateFlow<AppUiState> = mutableState.asStateFlow()
     private var countdownJob: Job? = null
+    private var watchTestJob: Job? = null
 
     init {
         observeBackend()
@@ -80,6 +82,7 @@ class AppViewModel(
     }
 
     fun navigate(screen: AppScreen) {
+        if (screen != AppScreen.EDITOR) cancelPendingWatchTest()
         mutableState.update { current -> current.copy(screen = screen, message = null) }
     }
 
@@ -126,6 +129,7 @@ class AppViewModel(
     }
 
     fun cancelCapture() = launchAction {
+        cancelPendingWatchTest()
         val session = mutableState.value.activeSession ?: return@launchAction
         backend.cancelCapture(session.id)
         countdownJob?.cancel()
@@ -142,6 +146,7 @@ class AppViewModel(
 
     fun chooseCaptured(recordId: String) {
         val record = mutableState.value.captured.firstOrNull { it.id == recordId } ?: return
+        cancelPendingWatchTest()
         mutableState.update {
             it.copy(
                 screen = AppScreen.EDITOR,
@@ -157,6 +162,7 @@ class AppViewModel(
 
     fun editRule(ruleId: String) {
         val rule = mutableState.value.rules.firstOrNull { it.id == ruleId } ?: return
+        cancelPendingWatchTest()
         mutableState.update {
             it.copy(
                 screen = AppScreen.EDITOR,
@@ -171,6 +177,7 @@ class AppViewModel(
     }
 
     fun updateDraft(transform: (RuleDraft) -> RuleDraft) {
+        cancelPendingWatchTest()
         mutableState.update { current ->
             current.copy(
                 draft = current.draft?.let(transform),
@@ -189,18 +196,39 @@ class AppViewModel(
                 packageName = draft.packageName,
                 channelId = draft.channelId,
                 title = "Wrist Relay 테스트",
-                body = "저장된 규칙의 진동 패턴을 확인합니다.",
+                body = "선택한 알림이 워치에 전달되는지 확인합니다.",
                 notificationKey = "rule-edit-test",
                 postedAt = clock.instant(),
             )
         } else {
             current.captured.firstOrNull { it.id == current.selectedRecordId }?.notification ?: return
         }
-        runCatching { backend.sendWatchTest(rule, event) }
-            .onFailure { showFailure(it); return }
-        mutableState.update {
-            it.copy(watchTestSent = true, watchTestConfirmed = false, message = "워치에서 진동을 확인해 주세요.")
+        cancelPendingWatchTest()
+        watchTestJob = viewModelScope.launch {
+            for (seconds in WATCH_TEST_DELAY_SECONDS downTo 1) {
+                mutableState.update {
+                    it.copy(watchTestCountdownSeconds = seconds, watchTestSent = false,
+                        watchTestConfirmed = false, message = null)
+                }
+                delay(1_000)
+            }
+            runCatching { backend.sendWatchTest(rule, event) }
+                .onFailure { error ->
+                    mutableState.update { it.copy(watchTestCountdownSeconds = 0) }
+                    showFailure(error)
+                    return@launch
+                }
+            mutableState.update {
+                it.copy(watchTestCountdownSeconds = 0, watchTestSent = true,
+                    watchTestConfirmed = false, message = "테스트 알림을 게시했습니다. 워치 수신을 확인해 주세요.")
+            }
         }
+    }
+
+    private fun cancelPendingWatchTest() {
+        watchTestJob?.cancel()
+        watchTestJob = null
+        mutableState.update { it.copy(watchTestCountdownSeconds = 0) }
     }
 
     fun confirmWatchTest() {
@@ -218,7 +246,7 @@ class AppViewModel(
 
     fun saveRule() = launchAction {
         val current = mutableState.value
-        require(current.watchTestConfirmed) { "워치 진동 테스트를 먼저 확인해 주세요." }
+        require(current.watchTestConfirmed) { "워치 알림 전달 테스트를 먼저 확인해 주세요." }
         val draft = requireNotNull(current.draft)
         require(draft.hasUsableCondition()) { "하나 이상의 유효한 스마트 조건을 선택해 주세요." }
         val editingRuleId = current.editingRuleId
@@ -270,7 +298,7 @@ class AppViewModel(
             appendLine("리스너 연결: ${current.readiness.listenerConnected}")
             appendLine("리스너 마지막 이벤트: ${current.listenerEvent.label()}")
             appendLine("재연결 요청 시각: ${current.listenerRebindRequestedAt?.let(::formatTime) ?: "없음"}")
-            appendLine("진동 불가 채널 수: ${current.readiness.blockedPresetChannels.size}")
+            appendLine("차단 또는 진동 꺼짐 채널 수: ${current.readiness.blockedPresetChannels.size}")
             appendLine("규칙 수: ${current.rules.size}")
             appendLine("활성 규칙 수: ${current.rules.count { it.enabled }}")
             appendLine("임시 기록 수: ${current.captured.size}")
@@ -373,6 +401,7 @@ class AppViewModel(
 
     companion object {
         private const val TEST_RULE_ID = "preview-rule"
+        private const val WATCH_TEST_DELAY_SECONDS = 10
 
         fun factory(backend: AppBackend): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
