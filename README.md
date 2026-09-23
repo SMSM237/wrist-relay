@@ -27,6 +27,8 @@ Android notification relay for selected alerts on Galaxy Watch — local-first, 
 
 ## 설치와 업데이트
 
+최신 설치 파일: [wrist-relay-0.1.2-debug.apk 다운로드](https://github.com/SMSM237/wrist-relay/releases/download/v0.1.2-debug/wrist-relay-0.1.2-debug.apk) · [검증 내용과 주의사항](https://github.com/SMSM237/wrist-relay/releases/tag/v0.1.2-debug)
+
 `wrist-relay-0.1.2-debug.apk`는 개발용 서명 APK입니다. 이전 `0.1.1-debug`와 같은 디버그 인증서로 서명하고 버전 코드를 올려, 정상적인 업데이트 설치 시 앱 데이터와 규칙을 유지하도록 했습니다. Android가 외부 설치를 경고할 수 있습니다. 다운로드 출처와 SHA-256 `6526E331AD08E325B9B195E61FBE58DE55E4A4328E4121B96B8833D98789CDB7`을 확인하세요. Google Play 배포용 최종 서명판은 아닙니다.
 
 실제 휴대폰·워치의 리스너 연결, 삼성월렛 알림 매칭, 워치 진동은 이 원격 개발 환경에서 확인하지 못했습니다. 에뮬레이터 결과를 실제 기기 성공으로 해석하지 마세요.
