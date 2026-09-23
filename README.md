@@ -29,17 +29,18 @@ Android notification relay for selected alerts on Galaxy Watch — local-first, 
 
 ## 설치와 업데이트
 
-최신 설치 파일은 [GitHub 릴리스](https://github.com/SMSM237/wrist-relay/releases)에서 확인하세요. 이 저장소의 `0.1.3-debug`는 휴대폰 앱만 설치하는 시험판입니다.
+정식 서명 APK는 [v0.1.3 릴리스](https://github.com/SMSM237/wrist-relay/releases/tag/v0.1.3)의 `wrist-relay-0.1.3.apk`입니다. GitHub에 표시된 SHA-256을 확인한 뒤 휴대폰에 설치하세요. Google Play를 통한 설치 파일은 아니므로 Android가 외부 설치 경고를 표시할 수 있습니다.
 
-`wrist-relay-0.1.3-debug.apk`는 개발용 서명 APK입니다. 이전 디버그판과 같은 인증서로 서명하고 버전 코드를 올렸습니다. 정상적인 업데이트 설치 시 앱 데이터와 규칙을 유지하도록 설계했지만, 실제 기기 업데이트는 아직 검증하지 못했습니다. Android가 외부 설치를 경고할 수 있습니다. 릴리스의 SHA-256 값을 확인하세요. Google Play 배포용 최종 서명판은 아닙니다.
+정식판의 패키지명은 `com.sangmin.wristrelay`, 이전 디버그판은 `com.sangmin.wristrelay.debug`입니다. **정식판은 디버그판 위에 업데이트되지 않고 별도 앱으로 설치되며, 기존 규칙·권한도 자동 이전되지 않습니다.** 디버그판을 삭제하기 전에 정식판의 권한을 다시 허용하고 필요한 규칙을 재설정하세요. 향후 정식판 업데이트에는 동일한 비공개 릴리스 서명 키가 필요합니다.
 
-실제 휴대폰·워치의 리스너 연결, 삼성월렛 알림 매칭, 워치 진동은 이 원격 개발 환경에서 확인하지 못했습니다. 에뮬레이터 결과를 실제 기기 성공으로 해석하지 마세요.
+정식 APK는 에뮬레이터에서 설치·실행까지 확인했지만, 이 바이너리의 실제 Galaxy S25 Edge·Watch Ultra 2025 수신·진동, 삼성월렛 알림 매칭은 원격 환경에서 검증하지 못했습니다. 에뮬레이터 결과를 실제 기기 성공으로 해석하지 마세요.
 
 ## 빌드
 
 - Android SDK API 36 / Build Tools 36.0.0
 - JDK 17 / Gradle 9.5.0
 - `./gradlew.bat testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest` (Windows)
+- 정식판은 네 가지 `WRIST_RELAY_*` 서명 환경 변수로 비공개 키를 지정한 뒤 `scripts/build-signed-release.ps1`로 빌드합니다. 키와 비밀번호를 저장소에 넣지 말고 안전하게 별도 백업하세요. 키를 잃으면 설치된 정식판을 같은 패키지명으로 업데이트할 수 없습니다.
 
 Android 8.0(API 26) 이상을 대상으로 합니다. 정적 Wanted Sans TTF는 [SIL Open Font License 1.1](licenses/WantedSans-OFL.txt)로 포함했습니다.
 
